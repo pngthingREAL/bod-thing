@@ -1,0 +1,379 @@
+# ============================================================
+# 🌎 ECOBOT - BOT DE DISCORD PARA RECICLAR ♻️
+# Python + discord.py
+# ============================================================
+
+import discord
+from discord.ext import commands
+import random
+import json
+import os
+
+# ---------------- CONFIGURACIÓN ----------------
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents,
+    help_command=None
+)
+
+ARCHIVO = "eco_datos.json"
+
+# ---------------- BASE DE DATOS ----------------
+
+if os.path.exists(ARCHIVO):
+    with open(ARCHIVO, "r", encoding="utf-8") as f:
+        usuarios = json.load(f)
+else:
+    usuarios = {}
+
+
+def guardar():
+    with open(ARCHIVO, "w", encoding="utf-8") as f:
+        json.dump(usuarios, f, indent=4, ensure_ascii=False)
+
+
+def crear_usuario(user_id):
+    user_id = str(user_id)
+
+    if user_id not in usuarios:
+        usuarios[user_id] = {
+            "puntos": 0,
+            "reciclados": 0
+        }
+
+    return usuarios[user_id]
+
+
+def nivel(puntos):
+    if puntos < 50:
+        return "🌱 Brote"
+    elif puntos < 150:
+        return "🌿 Plantita"
+    elif puntos < 300:
+        return "🌳 Árbol"
+    elif puntos < 600:
+        return "🌲 Bosque"
+    else:
+        return "🌎 GUARDIÁN DEL PLANETA"
+
+
+# ---------------- EVENTO INICIO ----------------
+
+@bot.event
+async def on_ready():
+    print("===================================")
+    print("🌎 ECOBOT ESTÁ ENCENDIDO")
+    print(f"🤖 Conectado como {bot.user}")
+    print("♻️ ¡A reciclar!")
+    print("===================================")
+
+
+# ---------------- COMANDO AYUDA ----------------
+
+@bot.command()
+async def ayuda(ctx):
+
+    embed = discord.Embed(
+        title="🌎 ECOBOT - AYUDA ♻️",
+        description="¡Bienvenido al centro de reciclaje virtual!",
+    )
+
+    embed.add_field(
+        name="♻️ Reciclaje",
+        value=(
+            "`!reciclar <objeto>`\n"
+            "`!reciclé <objeto>`\n"
+            "`!basura <objeto>`"
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="🌱 Tu progreso",
+        value=(
+            "`!puntos`\n"
+            "`!nivel`\n"
+            "`!ranking`"
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="💡 Información",
+        value=(
+            "`!consejo`\n"
+            "`!eco`\n"
+            "`!planeta`"
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="😂 Comandos secretos",
+        value="`!blbiba`",
+        inline=False
+    )
+
+    await ctx.send(embed=embed)
+
+
+# ---------------- CONSEJOS ----------------
+
+consejos = [
+    "💧 Cierra el grifo mientras te cepillas los dientes.",
+    "💡 Apaga las luces que no estés utilizando.",
+    "♻️ Separa los residuos antes de tirarlos.",
+    "🛍️ Si puedes, utiliza bolsas reutilizables.",
+    "🚲 Caminar o usar bicicleta puede reducir la contaminación.",
+    "🌳 Cuida los árboles y evita desperdiciar papel.",
+    "🥤 Lleva una botella reutilizable.",
+    "🔌 Desconecta los aparatos que no estés utilizando.",
+    "🍎 Intenta no desperdiciar comida.",
+    "🌎 Un pequeño hábito puede convertirse en un gran cambio."
+]
+
+
+@bot.command()
+async def consejo(ctx):
+    await ctx.send(
+        "💡 **CONSEJO ECOLÓGICO:**\n"
+        + random.choice(consejos)
+    )
+
+
+# ---------------- DATOS CURIOSOS ----------------
+
+datos = [
+    "🌳 Los árboles ayudan a absorber dióxido de carbono.",
+    "♻️ Muchos materiales pueden reutilizarse en lugar de tirarse.",
+    "💧 El agua dulce disponible para nosotros es una pequeña parte del agua del planeta.",
+    "🐝 Los polinizadores son muy importantes para muchos ecosistemas.",
+    "🌎 Los océanos cubren aproximadamente el 71% de la superficie terrestre.",
+    "🦋 La biodiversidad ayuda a mantener ecosistemas saludables.",
+    "📦 Reducir y reutilizar puede evitar generar residuos innecesarios."
+]
+
+
+@bot.command()
+async def eco(ctx):
+    await ctx.send("🧠 **DATO ECO:**\n" + random.choice(datos))
+
+
+# ---------------- RECICLAR ----------------
+
+materiales = {
+    "botella": "♻️ Plástico",
+    "botella plastica": "♻️ Plástico",
+    "plastico": "♻️ Plástico",
+    "lata": "🥫 Metal",
+    "carton": "📦 Cartón",
+    "caja": "📦 Cartón",
+    "papel": "📄 Papel",
+    "vidrio": "🍾 Vidrio",
+    "frasco": "🍾 Vidrio",
+    "periodico": "📰 Papel",
+    "revista": "📰 Papel"
+}
+
+
+@bot.command()
+async def reciclar(ctx, *, objeto=None):
+
+    if objeto is None:
+        await ctx.send(
+            "♻️ Escribe algo después del comando.\n"
+            "Ejemplo: `!reciclar botella`"
+        )
+        return
+
+    objeto = objeto.lower().strip()
+
+    if objeto in materiales:
+        tipo = materiales[objeto]
+
+        await ctx.send(
+            f"♻️ **{objeto.upper()}**\n"
+            f"➡️ Categoría: {tipo}\n\n"
+            "🌱 ¡Recuerda limpiarlo y separarlo correctamente "
+            "según las reglas de reciclaje de tu localidad!"
+        )
+
+    else:
+        await ctx.send(
+            f"🤔 No tengo registrado **{objeto}**.\n"
+            "Puedes preguntarle a alguien de tu localidad cómo "
+            "debe desecharse correctamente."
+        )
+
+
+# ---------------- REGISTRAR RECICLAJE ----------------
+
+@bot.command()
+async def recicle(ctx, *, objeto=None):
+    if objeto is None:
+        await ctx.send(
+            "♻️ Usa: `!reciclé botella`"
+        )
+        return
+
+    user = crear_usuario(ctx.author.id)
+
+    puntos = random.randint(5, 20)
+
+    user["puntos"] += puntos
+    user["reciclados"] += 1
+
+    guardar()
+
+    await ctx.send(
+        f"♻️ **¡RECICLAJE REGISTRADO!**\n\n"
+        f"📦 Objeto: **{objeto}**\n"
+        f"⭐ +{puntos} puntos verdes\n"
+        f"🌱 Total: **{user['puntos']} puntos**\n\n"
+        f"¡Bien hecho, {ctx.author.mention}! 🌎"
+    )
+
+
+# ---------------- PUNTOS ----------------
+
+@bot.command()
+async def puntos(ctx):
+
+    user = crear_usuario(ctx.author.id)
+
+    await ctx.send(
+        f"🌱 **ESTADÍSTICAS DE {ctx.author.display_name}**\n\n"
+        f"⭐ Puntos verdes: **{user['puntos']}**\n"
+        f"♻️ Objetos reciclados: **{user['reciclados']}**\n"
+        f"🏆 Nivel: **{nivel(user['puntos'])}**"
+    )
+
+
+# ---------------- NIVEL ----------------
+
+@bot.command()
+async def niveleco(ctx):
+
+    user = crear_usuario(ctx.author.id)
+
+    await ctx.send(
+        f"🌎 **TU NIVEL ECOLÓGICO**\n\n"
+        f"{nivel(user['puntos'])}\n"
+        f"⭐ {user['puntos']} puntos"
+    )
+
+
+# ---------------- RANKING ----------------
+
+@bot.command()
+async def ranking(ctx):
+
+    if not usuarios:
+        await ctx.send("🌱 Todavía nadie tiene puntos.")
+        return
+
+    ranking = sorted(
+        usuarios.items(),
+        key=lambda x: x[1]["puntos"],
+        reverse=True
+    )
+
+    texto = "🏆 **RANKING ECOLÓGICO** 🌎\n\n"
+
+    for posicion, (user_id, datos_usuario) in enumerate(
+        ranking[:10],
+        start=1
+    ):
+        try:
+            usuario = await bot.fetch_user(int(user_id))
+            nombre = usuario.display_name
+        except:
+            nombre = "Usuario desconocido"
+
+        texto += (
+            f"**{posicion}.** {nombre} — "
+            f"⭐ {datos_usuario['puntos']} puntos\n"
+        )
+
+    await ctx.send(texto)
+
+
+# ---------------- PLANETA ----------------
+
+@bot.command()
+async def planeta(ctx):
+
+    await ctx.send(
+        "🌎 **MISIÓN: CUIDAR EL PLANETA** 🌎\n\n"
+        "♻️ Recicla\n"
+        "💧 Ahorra agua\n"
+        "💡 Ahorra energía\n"
+        "🌳 Cuida la naturaleza\n"
+        "🗑️ No tires basura al suelo\n"
+        "🐝 Protege la biodiversidad\n\n"
+        "**No tienes que cambiar el mundo en un día.**\n"
+        "Cada pequeño hábito ayuda. 🌱"
+    )
+
+
+# ---------------- BLBIBA 😂 ----------------
+
+@bot.command()
+async def blbiba(ctx):
+
+    respuestas = [
+        "🌎♻️ BLBIBA ECOLÓGICA ACTIVADA.",
+        "🗑️ ¡ESA BASURA NO SE VA A RECICLAR SOLA!",
+        "🌳 EL ÁRBOL ESTÁ MIRANDO. 👁️🌳👁️",
+        "♻️ RECICLA O EL CONTENEDOR SE PONDRÁ TRISTE.",
+        "🌎 ECOBOT HA DETECTADO... ¡ENERGÍA VERDE!",
+        "💀 Botella al suelo detectada. EL ECOBOT NO APRUEBA ESO.",
+        "🐢 Una tortuga marina te está dando las gracias.",
+        "🌱 *sonido de plantita creciendo*"
+    ]
+
+    await ctx.send(random.choice(respuestas))
+
+
+# ---------------- MENSAJE AUTOMÁTICO ----------------
+
+@bot.event
+async def on_message(message):
+
+    if message.author.bot:
+        return
+
+    texto = message.content.lower()
+
+    palabras = [
+        "reciclar",
+        "reciclaje",
+        "medio ambiente",
+        "contaminacion",
+        "contaminación"
+    ]
+
+    if any(palabra in texto for palabra in palabras):
+
+        if random.random() < 0.12:
+            await message.channel.send(
+                "🌱 **¡Hablando de medio ambiente!**\n"
+                "Recuerda: reducir, reutilizar y reciclar. ♻️"
+            )
+
+    await bot.process_commands(message)
+
+
+# ---------------- INICIAR BOT ----------------
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+
+if not TOKEN:
+    print("❌ No encontré DISCORD_TOKEN.")
+    print("Configura tu token como variable de entorno.")
+else:
+    bot.run(TOKEN)
